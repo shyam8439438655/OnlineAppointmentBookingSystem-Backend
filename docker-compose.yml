@@ -1,0 +1,192 @@
+version: "3.9"
+
+# ================================================================
+# OABS - Online Appointment Booking System
+# Local Development Docker Compose
+#
+# Usage:
+#   docker-compose up --build          → Sab services start karo
+#   docker-compose up api-gateway      → Sirf ek service start karo
+#   docker-compose down                → Sab band karo
+# ================================================================
+
+services:
+
+  # ── API Gateway (Java 21) ──────────────────────────────────────
+  api-gateway:
+    build: ./backend/api-gateway
+    container_name: oabs-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - auth-service
+      - appointment-service
+      - provider-service
+      - payment-service
+      - record-service
+      - notification-service
+      - review-service
+      - schedule-service
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Auth Service (Java 17) ────────────────────────────────────
+  auth-service:
+    build: ./backend/auth-service
+    container_name: oabs-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Appointment Service (Java 17) ─────────────────────────────
+  appointment-service:
+    build: ./backend/appointment-service
+    container_name: oabs-appointment-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Provider Service (Java 17) ────────────────────────────────
+  provider-service:
+    build: ./backend/provider-service
+    container_name: oabs-provider-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Payment Service (Java 17) ─────────────────────────────────
+  payment-service:
+    build: ./backend/payment-service
+    container_name: oabs-payment-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Record Service (Java 17) ──────────────────────────────────
+  record-service:
+    build: ./backend/record-service
+    container_name: oabs-record-service
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Notification Service (Java 17) ────────────────────────────
+  notification-service:
+    build: ./backend/notification-service
+    container_name: oabs-notification-service
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Review Service (Java 17) ──────────────────────────────────
+  review-service:
+    build: ./backend/review-service
+    container_name: oabs-review-service
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Schedule Service (Java 17) ────────────────────────────────
+  schedule-service:
+    build: ./backend/schedule-service
+    container_name: oabs-schedule-service
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
+    networks:
+      - oabs-network
+    restart: on-failure
+
+  # ── Redis (Caching Service) ───────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: oabs-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - oabs-network
+    restart: always
+
+networks:
+  oabs-network:
+    driver: bridge
